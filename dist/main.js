@@ -18,9 +18,13 @@ async function bootstrap() {
     const document = swagger_1.SwaggerModule.createDocument(app, config);
     swagger_1.SwaggerModule.setup('api', app, document);
     const configService = app.get(config_1.ConfigService);
-    const frontendUrl = configService.get('FRONTEND_URL') || 'http://localhost:3001';
+    const frontendUrl = configService.get('FRONTEND_URL');
+    const origins = frontendUrl ? frontendUrl.split(',') : ['http://localhost:3001', 'https://articles-aggregator-ui.vercel.app'];
     app.enableCors({
-        origin: frontendUrl,
+        origin: origins,
+        credentials: true,
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+        allowedHeaders: 'Content-Type,Accept,Authorization',
     });
     const port = configService.get('PORT') || 3000;
     await app.listen(port);
