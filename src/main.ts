@@ -20,11 +20,8 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   const configService = app.get(ConfigService);
-  const frontendUrl = configService.get<string>('FRONTEND_URL');
-  const origins = frontendUrl ? frontendUrl.split(',') : ['http://localhost:3001','https://articles-aggregator-ui.vercel.app'];
-
   app.enableCors({
-    origin: origins,
+    origin: true,
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type,Accept,Authorization',
