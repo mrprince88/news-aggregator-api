@@ -38,5 +38,8 @@ COPY --from=builder /app/dist ./dist
 # Set Node environment
 ENV NODE_ENV=production
 
+# Expose the port the app runs on
+EXPOSE 10000
+
 # Start the application
 CMD ["node", "dist/main.js"]
