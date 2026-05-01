@@ -6,6 +6,9 @@ import { HealthModule } from './health/health.module';
 import { SourcesModule } from './sources/sources.module';
 import { ArticlesModule } from './articles/articles.module';
 
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -23,5 +26,7 @@ import { ArticlesModule } from './articles/articles.module';
     SourcesModule,
     ArticlesModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

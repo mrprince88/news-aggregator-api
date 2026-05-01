@@ -19,19 +19,35 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const schedule_1 = require("@nestjs/schedule");
 const article_entity_1 = require("./entities/article.entity");
+const sync_state_entity_1 = require("./entities/sync-state.entity");
 const sources_service_1 = require("../sources/sources.service");
 let ArticlesService = ArticlesService_1 = class ArticlesService {
-    constructor(articleModel, sourcesService) {
+    constructor(articleModel, syncStateModel, sourcesService) {
         this.articleModel = articleModel;
+        this.syncStateModel = syncStateModel;
         this.sourcesService = sourcesService;
         this.logger = new common_1.Logger(ArticlesService_1.name);
     }
     async onModuleInit() {
-        this.ingestAll().catch(e => this.logger.error('Ingestion failed:', e));
+        this.checkAndIngest().catch(e => this.logger.error('Ingestion failed:', e));
     }
     async handleCron() {
         this.logger.log('Scheduled ingestion triggered (every 30 min)');
+        await this.checkAndIngest();
+    }
+    async checkAndIngest() {
+        const syncState = await this.syncStateModel.findOne({ key: 'lastIngestion' });
+        const now = new Date();
+        if (syncState && syncState.lastRun) {
+            const timeDiff = now.getTime() - syncState.lastRun.getTime();
+            const minutesDiff = timeDiff / (1000 * 60);
+            if (minutesDiff < 30) {
+                this.logger.log(`Skipping ingestion. Last ingestion was ${Math.round(minutesDiff)} minutes ago.`);
+                return;
+            }
+        }
         await this.ingestAll();
+        await this.syncStateModel.updateOne({ key: 'lastIngestion' }, { lastRun: new Date() }, { upsert: true });
     }
     async ingestAll() {
         this.logger.log('Starting ingestion...');
@@ -450,7 +466,9 @@ __decorate([
 exports.ArticlesService = ArticlesService = ArticlesService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(article_entity_1.Article.name)),
+    __param(1, (0, mongoose_1.InjectModel)(sync_state_entity_1.SyncState.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model,
         sources_service_1.SourcesService])
 ], ArticlesService);
 //# sourceMappingURL=articles.service.js.map

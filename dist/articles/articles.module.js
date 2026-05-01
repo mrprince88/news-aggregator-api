@@ -12,6 +12,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const articles_controller_1 = require("./articles.controller");
 const articles_service_1 = require("./articles.service");
 const article_entity_1 = require("./entities/article.entity");
+const sync_state_entity_1 = require("./entities/sync-state.entity");
 const sources_module_1 = require("../sources/sources.module");
 let ArticlesModule = class ArticlesModule {
 };
@@ -19,7 +20,10 @@ exports.ArticlesModule = ArticlesModule;
 exports.ArticlesModule = ArticlesModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forFeature([{ name: article_entity_1.Article.name, schema: article_entity_1.ArticleSchema }]),
+            mongoose_1.MongooseModule.forFeature([
+                { name: article_entity_1.Article.name, schema: article_entity_1.ArticleSchema },
+                { name: sync_state_entity_1.SyncState.name, schema: sync_state_entity_1.SyncStateSchema }
+            ]),
             sources_module_1.SourcesModule,
         ],
         controllers: [articles_controller_1.ArticlesController],

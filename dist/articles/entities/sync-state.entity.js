@@ -9,27 +9,21 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppController = void 0;
-const common_1 = require("@nestjs/common");
-const app_service_1 = require("./app.service");
-let AppController = class AppController {
-    constructor(appService) {
-        this.appService = appService;
-    }
-    getHello() {
-        return { url: '/api' };
-    }
+exports.SyncStateSchema = exports.SyncState = void 0;
+const mongoose_1 = require("@nestjs/mongoose");
+let SyncState = class SyncState {
 };
-exports.AppController = AppController;
+exports.SyncState = SyncState;
 __decorate([
-    (0, common_1.Get)(),
-    (0, common_1.Redirect)('/api', 302),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], AppController.prototype, "getHello", null);
-exports.AppController = AppController = __decorate([
-    (0, common_1.Controller)(),
-    __metadata("design:paramtypes", [app_service_1.AppService])
-], AppController);
-//# sourceMappingURL=app.controller.js.map
+    (0, mongoose_1.Prop)({ required: true, unique: true }),
+    __metadata("design:type", String)
+], SyncState.prototype, "key", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", Date)
+], SyncState.prototype, "lastRun", void 0);
+exports.SyncState = SyncState = __decorate([
+    (0, mongoose_1.Schema)({ timestamps: true })
+], SyncState);
+exports.SyncStateSchema = mongoose_1.SchemaFactory.createForClass(SyncState);
+//# sourceMappingURL=sync-state.entity.js.map

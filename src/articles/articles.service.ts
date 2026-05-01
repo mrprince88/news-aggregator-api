@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Article, ArticleDocument } from './entities/article.entity';
+import { SyncState, SyncStateDocument } from './entities/sync-state.entity';
 import { SourcesService } from '../sources/sources.service';
 
 @Injectable()
@@ -11,11 +12,12 @@ export class ArticlesService implements OnModuleInit {
 
   constructor(
     @InjectModel(Article.name) private readonly articleModel: Model<ArticleDocument>,
+    @InjectModel(SyncState.name) private readonly syncStateModel: Model<SyncStateDocument>,
     private readonly sourcesService: SourcesService,
   ) {}
 
   async onModuleInit() {
-    this.ingestAll().catch(e => this.logger.error('Ingestion failed:', e));
+    this.checkAndIngest().catch(e => this.logger.error('Ingestion failed:', e));
   }
 
   /**
@@ -24,7 +26,31 @@ export class ArticlesService implements OnModuleInit {
   @Cron(CronExpression.EVERY_30_MINUTES)
   async handleCron() {
     this.logger.log('Scheduled ingestion triggered (every 30 min)');
+    await this.checkAndIngest();
+  }
+
+  async checkAndIngest() {
+    const syncState = await this.syncStateModel.findOne({ key: 'lastIngestion' });
+    const now = new Date();
+
+    if (syncState && syncState.lastRun) {
+      const timeDiff = now.getTime() - syncState.lastRun.getTime();
+      const minutesDiff = timeDiff / (1000 * 60);
+
+      if (minutesDiff < 30) {
+        this.logger.log(`Skipping ingestion. Last ingestion was ${Math.round(minutesDiff)} minutes ago.`);
+        return;
+      }
+    }
+
     await this.ingestAll();
+
+    // Update the timestamp after successful ingestion
+    await this.syncStateModel.updateOne(
+      { key: 'lastIngestion' },
+      { lastRun: new Date() },
+      { upsert: true }
+    );
   }
 
   async ingestAll() {

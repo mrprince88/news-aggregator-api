@@ -14,6 +14,8 @@ const schedule_1 = require("@nestjs/schedule");
 const health_module_1 = require("./health/health.module");
 const sources_module_1 = require("./sources/sources.module");
 const articles_module_1 = require("./articles/articles.module");
+const app_controller_1 = require("./app.controller");
+const app_service_1 = require("./app.service");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -35,6 +37,8 @@ exports.AppModule = AppModule = __decorate([
             sources_module_1.SourcesModule,
             articles_module_1.ArticlesModule,
         ],
+        controllers: [app_controller_1.AppController],
+        providers: [app_service_1.AppService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map
