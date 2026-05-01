@@ -60,8 +60,8 @@ export class SourcesService implements OnModuleInit {
       },
       {
         name: 'Founding Fuel',
-        baseUrl: 'https://foundingfuel.com',
-        type: 'rss',
+        baseUrl: 'https://www.foundingfuel.com',
+        type: 'scraper',
         rssUrl: 'http://www.foundingfuel.com/rss/latest',
       },
     ];

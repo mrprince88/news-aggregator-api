@@ -29,11 +29,11 @@ export class ArticlesService implements OnModuleInit {
     await this.checkAndIngest();
   }
 
-  async checkAndIngest() {
+  async checkAndIngest(force = false) {
     const syncState = await this.syncStateModel.findOne({ key: 'lastIngestion' });
     const now = new Date();
 
-    if (syncState && syncState.lastRun) {
+    if (!force && syncState && syncState.lastRun) {
       const timeDiff = now.getTime() - syncState.lastRun.getTime();
       const minutesDiff = timeDiff / (1000 * 60);
 
@@ -56,11 +56,16 @@ export class ArticlesService implements OnModuleInit {
   async ingestAll() {
     this.logger.log('Starting ingestion...');
     const sources = await this.sourcesService.findAll();
+    this.logger.log(`Found ${sources.length} sources to process.`);
     for (const source of sources) {
-      if (source.type === 'rss' && source.rssUrl) {
-        await this.ingestRSS(source);
-      } else if (source.type === 'scraper') {
-        await this.ingestHTML(source);
+      try {
+        if (source.type === 'rss' && source.rssUrl) {
+          await this.ingestRSS(source);
+        } else if (source.type === 'scraper') {
+          await this.ingestHTML(source);
+        }
+      } catch (err) {
+        this.logger.error(`Error processing source ${source.name}: ${err.message}`);
       }
     }
     const total = await this.articleModel.countDocuments();
@@ -256,6 +261,9 @@ export class ArticlesService implements OnModuleInit {
         items = this.parseFoundingFuel(html, source.baseUrl);
       }
 
+      this.logger.log(`Scraper found ${items.length} potential articles for ${source.name}`);
+
+      let newCount = 0;
       for (const item of items) {
         if (!item.title || !item.link) continue;
         
@@ -285,7 +293,9 @@ export class ArticlesService implements OnModuleInit {
           },
           { upsert: true },
         );
+        newCount++;
       }
+      this.logger.log(`Ingested ${newCount} new articles for ${source.name}`);
     } catch (error: any) {
       this.logger.error(`Failed to scrape ${source.name}: ${error.message}`);
     }
@@ -293,6 +303,7 @@ export class ArticlesService implements OnModuleInit {
 
   private async fetchHtml(url: string): Promise<string> {
     const response = await fetch(url, {
+      redirect: 'follow',
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -308,28 +319,28 @@ export class ArticlesService implements OnModuleInit {
     const items: { title: string; link: string }[] = [];
     const seen = new Set<string>();
 
-    // Target article title links within EPW's Drupal view structure
+    // 1. Target article title links within EPW's Drupal view structure
     const titleDivRegex = /views-field-title[^>]*>\s*<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
     let match;
     while ((match = titleDivRegex.exec(html)) !== null) {
       const href = match[1];
       const text = this.stripHtml(match[2]).trim();
-      if (href.includes('/journal/') && href.endsWith('.html') && text.length > 5) {
+      if (href.includes('/journal/') && text.length > 5) {
         const fullUrl = href.startsWith('http') ? href : new URL(href, baseUrl).toString();
         if (!seen.has(fullUrl)) {
           seen.add(fullUrl);
-          items.push({ title: text, link: fullUrl });
+          items.push({ title: this.decodeHtmlEntities(text), link: fullUrl });
         }
       }
     }
 
-    // Fallback: also grab any remaining /journal/ links not yet captured
-    const fallbackRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>([^<]{10,})<\/a>/gi;
-    while ((match = fallbackRegex.exec(html)) !== null) {
+    // 2. Generic link scraper for anything in /journal/ or /author/
+    const genericLinkRegex = /<a[^>]+href=["'](\/journal\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    while ((match = genericLinkRegex.exec(html)) !== null) {
       const href = match[1];
-      const text = match[2].trim();
-      if (href.includes('/journal/') && href.endsWith('.html')) {
-        const fullUrl = href.startsWith('http') ? href : new URL(href, baseUrl).toString();
+      const text = this.stripHtml(match[2]).trim();
+      if (text.length > 10) {
+        const fullUrl = new URL(href, baseUrl).toString();
         if (!seen.has(fullUrl)) {
           seen.add(fullUrl);
           items.push({ title: this.decodeHtmlEntities(text), link: fullUrl });
@@ -359,12 +370,12 @@ export class ArticlesService implements OnModuleInit {
       }
     }
 
-    // Strategy 2: Fallback — extract from simple <a> tags with /story/ href and clean text
-    const simpleLinkRegex = /<a[^>]+href=["'](\/story\/[^"']+)["'][^>]*>([^<]{3,})<\/a>/gi;
-    while ((match = simpleLinkRegex.exec(html)) !== null) {
+    // Strategy 2: More generic story link detection
+    const genericStoryRegex = /<a[^>]+href=["'](\/story\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    while ((match = genericStoryRegex.exec(html)) !== null) {
       const href = match[1];
-      const text = match[2].trim();
-      if (text.length > 2) {
+      const text = this.stripHtml(match[2]).trim();
+      if (text.length > 5) {
         const fullUrl = new URL(href, baseUrl).toString();
         if (!seen.has(fullUrl)) {
           seen.add(fullUrl);
@@ -380,7 +391,8 @@ export class ArticlesService implements OnModuleInit {
     const items: { title: string; link: string }[] = [];
     const seen = new Set<string>();
 
-    const linkRegex = /<a[^>]+href=["'](\/article\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    // Founding Fuel uses /article/ and /thought-leadership/ paths
+    const linkRegex = /<a[^>]+href=["'](\/(?:article|thought-leadership)\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
     let match;
     while ((match = linkRegex.exec(html)) !== null) {
       const href = match[1];
@@ -430,11 +442,11 @@ export class ArticlesService implements OnModuleInit {
       Politics: ['politics', 'government', 'election', 'policy', 'democrat', 'republican', 'parliament', 'minister', 'president', 'congress', 'senate', 'legislation', 'supreme court', 'court', 'biden', 'trump', 'modi', 'lawmaker', 'vote'],
       Philosophy: ['philosophy', 'ethics', 'moral', 'existential', 'epistemology', 'metaphysics', 'nietzsche', 'plato', 'socrates', 'kant', 'mind'],
       Economics: ['economics', 'economy', 'market', 'finance', 'inflation', 'gdp', 'recession', 'interest rate', 'stock', 'business', 'trade', 'investment', 'bank', 'wealth'],
-      Culture: ['culture', 'art', 'music', 'movie', 'film', 'literature', 'book', 'fashion', 'entertainment', 'celebrity', 'history', 'festival'],
-      Technology: ['technology', 'tech', 'software', 'hardware', 'ai', 'artificial intelligence', 'apple', 'google', 'microsoft', 'cybersecurity', 'internet', 'startup', 'digital', 'app', 'computer'],
-      Science: ['science', 'research', 'study', 'physics', 'biology', 'chemistry', 'space', 'nasa', 'astronomy', 'quantum', 'scientist', 'discovery', 'evolution'],
-      Society: ['society', 'social', 'education', 'healthcare', 'health', 'community', 'inequality', 'welfare', 'population', 'gender', 'crime', 'justice'],
-      Environment: ['environment', 'climate', 'sustainability', 'pollution', 'warming', 'green', 'renewable', 'carbon', 'energy', 'emissions', 'fossil fuel', 'nature', 'conservation']
+      Culture: ['culture', 'art', 'music', 'movie', 'film', 'literature', 'book', 'fashion', 'entertainment', 'celebrity', 'history', 'festival', 'writing', 'language', 'poetry', 'theater', 'drama'],
+      Technology: ['technology', 'tech', 'software', 'hardware', 'ai', 'artificial intelligence', 'apple', 'google', 'microsoft', 'cybersecurity', 'internet', 'startup', 'digital', 'app', 'computer', 'silicon valley', 'automation', 'robotics'],
+      Science: ['science', 'research', 'study', 'physics', 'biology', 'chemistry', 'space', 'nasa', 'astronomy', 'quantum', 'scientist', 'discovery', 'evolution', 'medicine', 'brain', 'universe', 'planet'],
+      Society: ['society', 'social', 'education', 'healthcare', 'health', 'community', 'inequality', 'welfare', 'population', 'gender', 'crime', 'justice', 'urban', 'city', 'race', 'religion'],
+      Environment: ['environment', 'climate', 'sustainability', 'pollution', 'warming', 'green', 'renewable', 'carbon', 'energy', 'emissions', 'fossil fuel', 'nature', 'conservation', 'wildlife', 'ocean', 'water']
     };
 
     let bestTopic = undefined;

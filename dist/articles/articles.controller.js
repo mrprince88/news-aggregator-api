@@ -21,6 +21,10 @@ let ArticlesController = class ArticlesController {
     constructor(articlesService) {
         this.articlesService = articlesService;
     }
+    async triggerIngestion() {
+        await this.articlesService.checkAndIngest(true);
+        return { message: 'Ingestion complete' };
+    }
     async findAll(query) {
         return this.articlesService.findAll(query);
     }
@@ -29,6 +33,14 @@ let ArticlesController = class ArticlesController {
     }
 };
 exports.ArticlesController = ArticlesController;
+__decorate([
+    (0, common_1.Post)('ingest'),
+    (0, swagger_1.ApiOperation)({ summary: 'Trigger manual ingestion' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Ingestion triggered.' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], ArticlesController.prototype, "triggerIngestion", null);
 __decorate([
     (0, common_1.Get)(),
     (0, swagger_1.ApiOperation)({ summary: 'Get paginated articles' }),

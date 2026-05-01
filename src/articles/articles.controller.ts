@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { Article } from './entities/article.entity';
@@ -7,6 +7,15 @@ import { Article } from './entities/article.entity';
 @Controller('articles')
 export class ArticlesController {
   constructor(private readonly articlesService: ArticlesService) {}
+  @Post('ingest')
+  @ApiOperation({ summary: 'Trigger manual ingestion' })
+  @ApiResponse({ status: 200, description: 'Ingestion triggered.' })
+  async triggerIngestion() {
+    // We don't await it here to avoid timeout, or we can await it if we want to wait for result.
+    // Let's await it so the user knows when it's done.
+    await this.articlesService.checkAndIngest(true);
+    return { message: 'Ingestion complete' };
+  }
 
   @Get()
   @ApiOperation({ summary: 'Get paginated articles' })

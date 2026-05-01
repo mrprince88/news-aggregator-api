@@ -11,7 +11,7 @@ export declare class ArticlesService implements OnModuleInit {
     constructor(articleModel: Model<ArticleDocument>, syncStateModel: Model<SyncStateDocument>, sourcesService: SourcesService);
     onModuleInit(): Promise<void>;
     handleCron(): Promise<void>;
-    checkAndIngest(): Promise<void>;
+    checkAndIngest(force?: boolean): Promise<void>;
     ingestAll(): Promise<void>;
     private ingestRSS;
     private parseRSSXml;
