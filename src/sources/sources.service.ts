@@ -1,21 +1,29 @@
 import { Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateSourceDto } from './dto/create-source.dto';
-import { Source } from './entities/source.entity';
-import { randomUUID } from 'crypto';
+import { Source, SourceDocument } from './entities/source.entity';
 
 @Injectable()
 export class SourcesService implements OnModuleInit {
-  private sources: Source[] = [];
   private readonly logger = new Logger(SourcesService.name);
 
-  onModuleInit() {
-    this.seedInitialSources();
+  constructor(
+    @InjectModel(Source.name) private readonly sourceModel: Model<SourceDocument>,
+  ) {}
+
+  async onModuleInit() {
+    await this.seedInitialSources();
   }
 
-  private seedInitialSources() {
-    if (this.sources.length > 0) return;
+  private async seedInitialSources() {
+    const count = await this.sourceModel.countDocuments();
+    if (count > 0) {
+      this.logger.log(`Sources already seeded (${count} found). Skipping.`);
+      return;
+    }
 
-    const initialSources: Omit<Source, 'id'>[] = [
+    const initialSources: Omit<Source, '_id'>[] = [
       {
         name: 'Aeon',
         baseUrl: 'https://aeon.co',
@@ -58,27 +66,21 @@ export class SourcesService implements OnModuleInit {
       },
     ];
 
-    initialSources.forEach((source) => {
-      this.create(source as CreateSourceDto);
-    });
-    this.logger.log(`Seeded ${this.sources.length} sources.`);
+    await this.sourceModel.insertMany(initialSources);
+    this.logger.log(`Seeded ${initialSources.length} sources.`);
   }
 
-  create(createSourceDto: CreateSourceDto): Source {
-    const newSource: Source = {
-      id: randomUUID(),
-      ...createSourceDto,
-    };
-    this.sources.push(newSource);
-    return newSource;
+  async create(createSourceDto: CreateSourceDto): Promise<SourceDocument> {
+    const newSource = new this.sourceModel(createSourceDto);
+    return newSource.save();
   }
 
-  findAll(): Source[] {
-    return this.sources;
+  async findAll(): Promise<SourceDocument[]> {
+    return this.sourceModel.find().exec();
   }
 
-  findOne(id: string): Source {
-    const source = this.sources.find((s) => s.id === id);
+  async findOne(id: string): Promise<SourceDocument> {
+    const source = await this.sourceModel.findById(id).exec();
     if (!source) {
       throw new NotFoundException(`Source with ID ${id} not found`);
     }

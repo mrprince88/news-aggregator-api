@@ -1,12 +1,14 @@
 import { OnModuleInit } from '@nestjs/common';
-import { Article } from './entities/article.entity';
+import { Model } from 'mongoose';
+import { ArticleDocument } from './entities/article.entity';
 import { SourcesService } from '../sources/sources.service';
 export declare class ArticlesService implements OnModuleInit {
+    private readonly articleModel;
     private readonly sourcesService;
-    private articles;
     private readonly logger;
-    constructor(sourcesService: SourcesService);
+    constructor(articleModel: Model<ArticleDocument>, sourcesService: SourcesService);
     onModuleInit(): Promise<void>;
+    handleCron(): Promise<void>;
     ingestAll(): Promise<void>;
     private ingestRSS;
     private parseRSSXml;
@@ -15,9 +17,12 @@ export declare class ArticlesService implements OnModuleInit {
     private fetchHtml;
     private parseEPW;
     private parseFiftyTwo;
+    private parseFoundingFuel;
     private extractXmlTag;
     private stripHtml;
     private decodeHtmlEntities;
+    private determineTopic;
+    private generateMetadataWithLLM;
     findAll(query: {
         source?: string;
         topic?: string;
@@ -25,11 +30,11 @@ export declare class ArticlesService implements OnModuleInit {
         offset?: string;
         from?: string;
         to?: string;
-    }): {
-        data: Article[];
+    }): Promise<{
+        data: ArticleDocument[];
         total: number;
         limit: number;
         offset: number;
-    };
-    findOne(id: string): Article;
+    }>;
+    findOne(id: string): Promise<ArticleDocument>;
 }

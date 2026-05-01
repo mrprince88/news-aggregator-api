@@ -5,22 +5,33 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 var SourcesService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SourcesService = void 0;
 const common_1 = require("@nestjs/common");
-const crypto_1 = require("crypto");
+const mongoose_1 = require("@nestjs/mongoose");
+const mongoose_2 = require("mongoose");
+const source_entity_1 = require("./entities/source.entity");
 let SourcesService = SourcesService_1 = class SourcesService {
-    constructor() {
-        this.sources = [];
+    constructor(sourceModel) {
+        this.sourceModel = sourceModel;
         this.logger = new common_1.Logger(SourcesService_1.name);
     }
-    onModuleInit() {
-        this.seedInitialSources();
+    async onModuleInit() {
+        await this.seedInitialSources();
     }
-    seedInitialSources() {
-        if (this.sources.length > 0)
+    async seedInitialSources() {
+        const count = await this.sourceModel.countDocuments();
+        if (count > 0) {
+            this.logger.log(`Sources already seeded (${count} found). Skipping.`);
             return;
+        }
         const initialSources = [
             {
                 name: 'Aeon',
@@ -63,24 +74,18 @@ let SourcesService = SourcesService_1 = class SourcesService {
                 rssUrl: 'http://www.foundingfuel.com/rss/latest',
             },
         ];
-        initialSources.forEach((source) => {
-            this.create(source);
-        });
-        this.logger.log(`Seeded ${this.sources.length} sources.`);
+        await this.sourceModel.insertMany(initialSources);
+        this.logger.log(`Seeded ${initialSources.length} sources.`);
     }
-    create(createSourceDto) {
-        const newSource = {
-            id: (0, crypto_1.randomUUID)(),
-            ...createSourceDto,
-        };
-        this.sources.push(newSource);
-        return newSource;
+    async create(createSourceDto) {
+        const newSource = new this.sourceModel(createSourceDto);
+        return newSource.save();
     }
-    findAll() {
-        return this.sources;
+    async findAll() {
+        return this.sourceModel.find().exec();
     }
-    findOne(id) {
-        const source = this.sources.find((s) => s.id === id);
+    async findOne(id) {
+        const source = await this.sourceModel.findById(id).exec();
         if (!source) {
             throw new common_1.NotFoundException(`Source with ID ${id} not found`);
         }
@@ -89,6 +94,8 @@ let SourcesService = SourcesService_1 = class SourcesService {
 };
 exports.SourcesService = SourcesService;
 exports.SourcesService = SourcesService = SourcesService_1 = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)(source_entity_1.Source.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model])
 ], SourcesService);
 //# sourceMappingURL=sources.service.js.map

@@ -21,10 +21,10 @@ let ArticlesController = class ArticlesController {
     constructor(articlesService) {
         this.articlesService = articlesService;
     }
-    findAll(query) {
+    async findAll(query) {
         return this.articlesService.findAll(query);
     }
-    findOne(id) {
+    async findOne(id) {
         return this.articlesService.findOne(id);
     }
 };
@@ -42,7 +42,7 @@ __decorate([
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ArticlesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
@@ -52,7 +52,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ArticlesController.prototype, "findOne", null);
 exports.ArticlesController = ArticlesController = __decorate([
     (0, swagger_1.ApiTags)('articles'),

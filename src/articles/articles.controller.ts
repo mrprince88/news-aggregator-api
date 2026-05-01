@@ -17,7 +17,7 @@ export class ArticlesController {
   @ApiQuery({ name: 'from', required: false, description: 'Date from (ISO string)' })
   @ApiQuery({ name: 'to', required: false, description: 'Date to (ISO string)' })
   @ApiResponse({ status: 200, description: 'Return paginated articles.' })
-  findAll(@Query() query: any) {
+  async findAll(@Query() query: any) {
     return this.articlesService.findAll(query);
   }
 
@@ -25,7 +25,7 @@ export class ArticlesController {
   @ApiOperation({ summary: 'Get an article by ID' })
   @ApiResponse({ status: 200, description: 'Return the article.', type: Article })
   @ApiResponse({ status: 404, description: 'Article not found.' })
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string) {
     return this.articlesService.findOne(id);
   }
 }

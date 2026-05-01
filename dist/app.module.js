@@ -9,6 +9,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
+const mongoose_1 = require("@nestjs/mongoose");
+const schedule_1 = require("@nestjs/schedule");
 const health_module_1 = require("./health/health.module");
 const sources_module_1 = require("./sources/sources.module");
 const articles_module_1 = require("./articles/articles.module");
@@ -21,6 +23,14 @@ exports.AppModule = AppModule = __decorate([
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
             }),
+            mongoose_1.MongooseModule.forRootAsync({
+                imports: [config_1.ConfigModule],
+                inject: [config_1.ConfigService],
+                useFactory: (configService) => ({
+                    uri: configService.get('MONGODB_URI', 'mongodb://localhost:27017/news_aggregator'),
+                }),
+            }),
+            schedule_1.ScheduleModule.forRoot(),
             health_module_1.HealthModule,
             sources_module_1.SourcesModule,
             articles_module_1.ArticlesModule,

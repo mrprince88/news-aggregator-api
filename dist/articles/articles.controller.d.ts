@@ -1,13 +1,12 @@
 import { ArticlesService } from './articles.service';
-import { Article } from './entities/article.entity';
 export declare class ArticlesController {
     private readonly articlesService;
     constructor(articlesService: ArticlesService);
-    findAll(query: any): {
-        data: Article[];
+    findAll(query: any): Promise<{
+        data: import("./entities/article.entity").ArticleDocument[];
         total: number;
         limit: number;
         offset: number;
-    };
-    findOne(id: string): Article;
+    }>;
+    findOne(id: string): Promise<import("./entities/article.entity").ArticleDocument>;
 }

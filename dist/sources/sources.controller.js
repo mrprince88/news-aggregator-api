@@ -22,13 +22,13 @@ let SourcesController = class SourcesController {
     constructor(sourcesService) {
         this.sourcesService = sourcesService;
     }
-    create(createSourceDto) {
+    async create(createSourceDto) {
         return this.sourcesService.create(createSourceDto);
     }
-    findAll() {
+    async findAll() {
         return this.sourcesService.findAll();
     }
-    findOne(id) {
+    async findOne(id) {
         return this.sourcesService.findOne(id);
     }
 };
@@ -40,7 +40,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_source_dto_1.CreateSourceDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], SourcesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
@@ -48,7 +48,7 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Return all sources.', type: [source_entity_1.Source] }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], SourcesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
@@ -58,7 +58,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], SourcesController.prototype, "findOne", null);
 exports.SourcesController = SourcesController = __decorate([
     (0, swagger_1.ApiTags)('sources'),

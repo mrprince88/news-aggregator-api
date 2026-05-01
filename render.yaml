@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: news-aggregator-api
+    env: docker
+    plan: free
+    region: oregon
+    dockerContext: .
+    dockerfilePath: Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # Set this in the Render Dashboard
+      - key: NVIDIA_API_KEY
+        sync: false # Set this in the Render Dashboard
+      - key: FRONTEND_URL
+        value: "*"
+      - key: MODEL_NAME
+        value: "stepfun-ai/step-3.5-flash"

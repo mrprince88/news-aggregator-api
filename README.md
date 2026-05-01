@@ -59,16 +59,26 @@ $ npm run test:cov
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+This project is configured for easy deployment using **Render** and **MongoDB Atlas**.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 1. Database (MongoDB Atlas)
+- Create a free cluster on [MongoDB Atlas](https://www.mongodb.com/atlas).
+- Get your connection string and add it as `MONGODB_URI` in your production environment.
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+### 2. API (Render)
+- This project includes a `render.yaml` for Blueprint deployments.
+- Connect your GitHub repository to [Render](https://render.com).
+- Render will automatically detect the `render.yaml` and configure the service.
+- Make sure to manually add your secret environment variables (like `NVIDIA_API_KEY`) in the Render Dashboard.
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Environment Variables
+| Key | Description |
+| --- | --- |
+| `PORT` | Set to `10000` for Render |
+| `MONGODB_URI` | Your MongoDB Atlas connection string |
+| `NVIDIA_API_KEY` | Your NVIDIA API key for article summarization |
+| `MODEL_NAME` | (Optional) LLM model name |
+
 
 ## Resources
 
